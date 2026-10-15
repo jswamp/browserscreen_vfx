@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Placa de Teclado</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Placa VFX">
+<meta name="theme-color" content="#141716">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: panel de seteo tipo claqueta (una columna) → placa a pantalla completa que sigue al viewport visible */
+:root{
+  --bg:#141716; --panel:#1d2120; --line:#343a38; --fg:#e9ecea; --muted:#9aa29f; --accent:#f2c230;
+  --verde:#00b140; --verde-m:#006926;
+  --azul:#0047bb; --azul-m:#002673;
+  --gris:#767676; --gris-m:#3c3c3c;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body.live{overflow:hidden;overscroll-behavior:none;touch-action:none}
+
+#setup{max-width:520px;margin:0 auto;padding-block:20px 32px;display:flex;flex-direction:column;gap:20px}
+.slate{border:2px solid var(--fg);display:grid;grid-template-columns:1fr auto}
+.slate h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.02em;text-transform:uppercase;margin:0;padding:10px 12px;line-height:1;text-wrap:balance}
+.slate .tag{font-family:var(--display);font-weight:700;background:var(--fg);color:var(--bg);padding:10px 12px;font-size:18px;letter-spacing:.08em;display:flex;align-items:center}
+.slate p{grid-column:1/-1;margin:0;border-top:2px solid var(--fg);padding:10px 12px;color:var(--muted);line-height:1.5}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0}
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt span{display:flex;flex-direction:column;gap:6px;border:2px solid var(--line);padding:10px;min-height:44px;justify-content:center;background:var(--panel)}
+.opt input:checked + span{border-color:var(--accent)}
+.opt input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.chip{display:block;height:44px}
+.opt b{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+.opt small{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#go{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--accent);color:#1a1600;border:0;padding:16px;cursor:pointer}
+#go:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
+.notes{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);line-height:1.6;font-size:13px}
+.notes h2{font-family:var(--display);font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg);margin:0 0 6px}
+.notes ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.notes strong{color:var(--fg);font-weight:500}
+.credit{border-top:2px solid var(--fg);padding-top:12px;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);line-height:1.5}
+.credit b{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg)}
+.credit span:first-of-type{color:var(--fg)}
+.credit small{margin-top:6px;font-size:11px}
+
+/* Placa */
+#plate{position:fixed;left:0;top:0;width:100vw;height:100vh;background:var(--plate);z-index:5;overflow:hidden}
+#plate .m{position:absolute;width:var(--ms);height:var(--ms);transform:translate(-50%,-50%);pointer-events:none}
+#plate .m::before,#plate .m::after{content:"";position:absolute;background:var(--mark)}
+#plate .m::before{left:0;right:0;top:50%;height:var(--mt);transform:translateY(-50%)}
+#plate .m::after{top:0;bottom:0;left:50%;width:var(--mt);transform:translateX(-50%)}
+#ta{position:absolute;left:12%;right:12%;top:30%;height:30%;background:transparent;border:0;outline:0;resize:none;
+  color:transparent;caret-color:transparent;font:16px/1.4 var(--mono);padding:0;margin:0;-webkit-text-fill-color:transparent}
+#plate.showtext #ta{color:var(--mark);-webkit-text-fill-color:var(--mark);opacity:.55}
+#hold{position:absolute;left:0;top:0;width:22%;height:12%;}
+#hint{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font:500 15px var(--mono);color:var(--mark);text-align:center;pointer-events:none;transition:opacity .4s}
+@media (prefers-reduced-motion:reduce){#hint{transition:none}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<main id="setup">
+  <div class="slate">
+    <h1>Placa de teclado</h1>
+    <div class="tag">VFX</div>
+    <p>Fondo de croma con marcas de track. Al tocarla se abre el teclado real del celular: el actor escribe sobre sus teclas de verdad y la zona de arriba queda limpia para el recorte.</p>
+  </div>
+
+  <fieldset>
+    <legend>Fondo</legend>
+    <div class="swatches">
+      <label class="opt"><input type="radio" name="color" id="c-verde" value="verde" checked><span><i class="chip" style="background:var(--verde)"></i><b>Verde</b><small>RGB 0·177·64</small></span></label>
+      <label class="opt"><input type="radio" name="color" id="c-azul" value="azul"><span><i class="chip" style="background:var(--azul)"></i><b>Azul</b><small>RGB 0·71·187</small></span></label>
+      <label class="opt"><input type="radio" name="color" id="c-gris" value="gris"><span><i class="chip" style="background:var(--gris)"></i><b>Gris 18%</b><small>RGB 118·118·118</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Marcas de track</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="marks" id="m-4" value="4" checked><span><b>4 esquinas</b><small>2 arriba, 2 sobre el teclado</small></span></label>
+      <label class="opt"><input type="radio" name="marks" id="m-0" value="0"><span><b>Sin marcas</b><small>Cámara y celular quietos</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Texto que se escribe</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="text" id="t-off" value="off" checked><span><b>Oculto</b><small>Placa limpia</small></span></label>
+      <label class="opt"><input type="radio" name="text" id="t-on" value="on"><span><b>Tenue</b><small>El actor ve lo que escribe</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Barra de sugerencias</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="sugg" id="s-off" value="off" checked><span><b>Apagada</b><small>Si el teclado lo permite</small></span></label>
+      <label class="opt"><input type="radio" name="sugg" id="s-on" value="on"><span><b>Normal</b><small>Como en el uso diario</small></span></label>
+    </div>
+  </fieldset>
+
+  <button id="go" type="button">Empezar</button>
+
+  <section class="notes">
+    <h2>En set</h2>
+    <ol>
+      <li><strong>Tocá la placa</strong> para abrir el teclado. Las marcas de abajo se ubican solas justo arriba del teclado.</li>
+      <li><strong>Para volver a este menú</strong>, mantené apretada la esquina superior izquierda 2 segundos. Al volver se borra lo escrito.</li>
+      <li>Modo avión, <strong>brillo manual y bajo</strong>, teclado en modo oscuro y bloqueo automático de pantalla desactivado.</li>
+      <li>El actor escribe <strong>el texto real del guion</strong>, así los dedos caen en las letras correctas.</li>
+      <li>En iPhone, conviene fijar la página con <strong>Acceso Guiado</strong> (Tacto activado) para que no se salga del navegador.</li>
+    </ol>
+  </section>
+
+  <footer class="credit">
+    <b>Ante cualquier duda, consultar con supervisión de VFX</b>
+    <span>Julián Stirparo Pantano</span>
+    <span>julian.stirparo@gmail.com · +54 9 11 6669 4390</span>
+    <small>© 2026 Julián Stirparo Pantano</small>
+  </footer>
+</main>
+
+<div id="plate" hidden>
+  <div class="m" id="m1"></div><div class="m" id="m2"></div><div class="m" id="m3"></div><div class="m" id="m4"></div>
+  <textarea id="ta" aria-label="Texto del actor" rows="3"></textarea>
+  <div id="hint">Tocá para abrir el teclado</div>
+  <div id="hold" aria-hidden="true"></div>
+</div>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  const setup=$('#setup'), plate=$('#plate'), ta=$('#ta'), hint=$('#hint'), hold=$('#hold');
+  const marks=[$('#m1'),$('#m2'),$('#m3'),$('#m4')];
+  const COLORS={verde:['--verde','--verde-m'],azul:['--azul','--azul-m'],gris:['--gris','--gris-m']};
+  let showMarks=true, wake=null;
+  const val=n=>document.querySelector(`input[name="${n}"]:checked`).value;
+
+  try{const s=JSON.parse(localStorage.getItem('placa')||'{}');
+    for(const [k,v] of Object.entries(s)){const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
+
+  function layout(){
+    const vv=window.visualViewport;
+    const w=vv?vv.width:innerWidth, h=vv?vv.height:innerHeight, top=vv?vv.offsetTop:0, left=vv?vv.offsetLeft:0;
+    plate.style.top=top+'px'; plate.style.left=left+'px';
+    plate.style.width=w+'px'; plate.style.height=h+'px';
+    const ms=Math.round(Math.min(w,h)*0.065), mt=Math.max(3,Math.round(ms*0.14));
+    plate.style.setProperty('--ms',ms+'px'); plate.style.setProperty('--mt',mt+'px');
+    const mx=Math.round(w*0.09), myTop=Math.round(Math.max(h*0.06,ms)), myBot=Math.round(h-ms*1.1);
+    const pos=[[mx,myTop],[w-mx,myTop],[mx,myBot],[w-mx,myBot]];
+    marks.forEach((m,i)=>{m.hidden=!showMarks; m.style.left=pos[i][0]+'px'; m.style.top=pos[i][1]+'px';});
+  }
+
+  async function start(){
+    const c=val('color');
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg')}));}catch(e){}
+    const root=getComputedStyle(document.documentElement);
+    plate.style.setProperty('--plate',root.getPropertyValue(COLORS[c][0]));
+    plate.style.setProperty('--mark',root.getPropertyValue(COLORS[c][1]));
+    showMarks=val('marks')==='4';
+    plate.classList.toggle('showtext',val('text')==='on');
+    const off=val('sugg')==='off';
+    ta.setAttribute('autocomplete',off?'off':'on');
+    ta.setAttribute('autocorrect',off?'off':'on');
+    ta.setAttribute('autocapitalize',off?'none':'sentences');
+    ta.spellcheck=!off;
+    ta.value=''; hint.style.opacity='1';
+    setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
+    document.documentElement.style.setProperty('--placa-bg',root.getPropertyValue(COLORS[c][0]));
+    document.body.style.background=root.getPropertyValue(COLORS[c][0]);
+    layout(); window.scrollTo(0,0);
+    try{ if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
+    try{ if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen'); }catch(e){}
+    layout();
+  }
+
+  function stop(){
+    ta.blur(); ta.value='';
+    plate.hidden=true; setup.hidden=false; document.body.classList.remove('live');
+    document.body.style.background='';
+    try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+    try{ if(wake){wake.release(); wake=null;} }catch(e){}
+    window.scrollTo(0,0);
+  }
+
+  $('#go').addEventListener('click',start);
+
+  plate.addEventListener('click',e=>{ if(e.target!==hold){ ta.focus({preventScroll:true}); hint.style.opacity='0'; }});
+  ta.addEventListener('focus',()=>{hint.style.opacity='0'; setTimeout(layout,50); setTimeout(layout,400);});
+
+  let t=null;
+  const cancel=()=>{clearTimeout(t); t=null;};
+  hold.addEventListener('pointerdown',e=>{e.preventDefault(); cancel(); t=setTimeout(stop,2000);});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>hold.addEventListener(ev,cancel));
+  hold.addEventListener('click',()=>{ ta.focus({preventScroll:true}); });
+
+  if(window.visualViewport){ visualViewport.addEventListener('resize',()=>{if(!plate.hidden) layout();});
+    visualViewport.addEventListener('scroll',()=>{if(!plate.hidden) layout();}); }
+  window.addEventListener('resize',()=>{if(!plate.hidden) layout();});
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible' && !plate.hidden){ try{ if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen'); }catch(e){} }
+  });
+})();
+</script>
+
+</body>
+</html>
