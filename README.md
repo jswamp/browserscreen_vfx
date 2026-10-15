@@ -1,6 +1,6 @@
 # BrowserScreen VFX
 
-Placa de croma verde, azul o gris con marcas de track para filmar pantallas de celulares y computadoras. Abre el teclado real del dispositivo para planos de manos escribiendo. Funciona en el navegador, sin instalar nada.
+Placa de croma verde, azul o gris con marcas de track para filmar pantallas de celulares y computadoras. Puede quedar fija aunque la toquen, o abrir el teclado real del dispositivo para planos de manos escribiendo. Funciona en el navegador, sin instalar nada.
 
 **Usar:** https://jswamp.github.io/browserscreen_vfx/
 
