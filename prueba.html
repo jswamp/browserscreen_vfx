@@ -344,7 +344,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
       const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${P}"><g fill="${col}">${cross(X,P*0.125)}${cross(w-X,P*0.625)}</g></svg>`;
       if(fMode){
         // Libre: grilla de cruces intercaladas que se mueve en X e Y
-        tileT=Math.round(w*0.6);
+        tileT=Math.round(w*1.0);
         const svgF=`<svg xmlns="http://www.w3.org/2000/svg" width="${tileT}" height="${tileT}"><g fill="${col}">${cross(tileT*0.25,tileT*0.25)}${cross(tileT*0.75,tileT*0.75)}</g></svg>`;
         pan.style.backgroundImage=showMarks?`url("data:image/svg+xml,${encodeURIComponent(svgF)}")`:'none';
         pan.style.backgroundSize=`${tileT}px ${tileT}px`; drawPan();
