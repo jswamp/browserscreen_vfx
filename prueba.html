@@ -77,6 +77,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 #scroller{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:none}
 #scroller::-webkit-scrollbar{display:none}
 #track{height:2000000px;background-repeat:repeat-y;background-position:0 0}
+#pan{position:absolute;inset:0;touch-action:none;background-repeat:repeat}
 #scroller.h{overflow-x:auto;overflow-y:hidden;touch-action:pan-x}
 #scroller.h #track{height:100%;width:max-content;display:flex;background-repeat:repeat-x}
 #scroller.h #track i{flex:none;width:var(--pw);height:100%}
@@ -158,7 +159,9 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
       <label class="opt"><input type="radio" name="dir" id="d-v" value="v" checked><span><b>Vertical</b><small>Arriba y abajo, como un feed o un chat</small></span></label>
       <label class="opt"><input type="radio" name="dir" id="d-h" value="h"><span><b>Horizontal</b><small>A los costados, como fotos o historias</small></span></label>
     </div>
+    <label class="opt optmini"><input type="radio" name="dir" id="d-f" value="f"><span><b>Libre</b><small>Para cualquier lado: mapas, feeds con carruseles</small></span></label>
     <label class="chk" for="snap" id="snaprow"><input type="checkbox" id="snap" checked><b>Pasar de a una</b><small>Al soltar, se acomoda en la siguiente</small></label>
+    <label class="chk" for="lock" id="lockrow"><input type="checkbox" id="lock" checked><b>Trabar en un eje</b><small>Cada gesto va solo vertical u horizontal</small></label>
   </fieldset>
 
   <fieldset id="fixedset">
@@ -198,7 +201,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   <section class="notes">
     <h2>En set</h2>
     <ol>
-      <li>Con <strong>No hacer nada</strong>, la pantalla queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la pantalla para abrirlo, o elegí un teclado <strong>falso</strong> dibujado: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces se mueven con el dedo, sin fin: por los costados en vertical, por arriba y abajo en horizontal. Los 4 círculos quedan fijos para el corner pin.</li>
+      <li>Con <strong>No hacer nada</strong>, la pantalla queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la pantalla para abrirlo, o elegí un teclado <strong>falso</strong> dibujado: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces se mueven con el dedo, sin fin: por los costados en vertical, por arriba y abajo en horizontal, y por toda la pantalla en libre. Los 4 círculos quedan fijos para el corner pin.</li>
       <li><strong>Para volver a este menú</strong>, mantené apretada la esquina superior izquierda 2 segundos. Al volver se borra lo escrito.</li>
       <li>Modo avión, <strong>brillo manual y bajo</strong>, teclado en modo oscuro y bloqueo automático de pantalla desactivado.</li>
       <li>El actor escribe <strong>el texto real del guion</strong>, así los dedos caen en las letras correctas.</li>
@@ -215,6 +218,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
 <div id="plate" hidden>
   <div id="scroller" hidden><div id="track"></div></div>
+  <div id="pan" hidden></div>
   <div class="m" id="m1"></div><div class="m" id="m2"></div><div class="m" id="m3"></div><div class="m" id="m4"></div>
   <div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div>
   <div id="fakekb" hidden></div>
@@ -232,7 +236,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   const circles=[$('#c1'),$('#c2'),$('#c3'),$('#c4')];
   let fixedOn=true;
   const COLORS={verde:['--verde','--verde-m','--verde-l'],azul:['--azul','--azul-m','--azul-l'],gris:['--gris','--gris-m','--gris-l']};
-  let showMarks=true, wake=null, kbMode=false, scrollMode=false, fakeMode=false, hMode=false, lastW=0;
+  let showMarks=true, wake=null, kbMode=false, scrollMode=false, fakeMode=false, hMode=false, fMode=false, lastW=0;
   const PAGES=2001;
   const fakekb=$('#fakekb');
   const scroller=$('#scroller'), track=$('#track');
@@ -248,10 +252,11 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     if(typeof s.hitk==='boolean') $('#hitk').checked=s.hitk;
     if(typeof s.showt==='boolean') $('#showt').checked=s.showt;
     if(typeof s.snap==='boolean') $('#snap').checked=s.snap;
+    if(typeof s.lock==='boolean') $('#lock').checked=s.lock;
     for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
       if(k==='text'){ $('#showr').checked=v==='on'; continue; }
       if(k==='sugg'){ $('#sugr').checked=v==='on'; continue; }
-      if(['op','enye','hitk','showt','snap'].includes(k)) continue;
+      if(['op','enye','hitk','showt','snap','lock'].includes(k)) continue;
       const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
   sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
   syncCustom();
@@ -262,7 +267,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     fakekb.innerHTML='<div class="bar"></div><div class="rows">'+rows.map(r=>'<div class="r">'+r.map(k).join('')+'</div>').join('')+'</div>';
   }
   // Bloquea los gestos del navegador (Tocar para buscar, selección, menú) cuando la pantalla no debe responder
-  plate.addEventListener('touchstart',e=>{ if(!plate.hidden && !kbMode && !scrollMode) e.preventDefault(); },{passive:false});
+  plate.addEventListener('touchstart',e=>{ if(!plate.hidden && !kbMode && !(scrollMode&&!fMode)) e.preventDefault(); },{passive:false});
   plate.addEventListener('contextmenu',e=>e.preventDefault());
   plate.addEventListener('selectstart',e=>e.preventDefault());
   const faketext=$('#faketext'); let shift=false;
@@ -277,6 +282,34 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     else if(l==='') t+=' ';
     else { t+=shift?l.toUpperCase():l; shift=false; }
     faketext.textContent=t; });
+
+  // Modo Libre: arrastre propio con traba de eje por gesto e inercia
+  const pan=$('#pan'); let ox=0, oy=0, tileT=1, drag=null, raf=0;
+  const mod=(a,b)=>((a%b)+b)%b;
+  function drawPan(){ pan.style.backgroundPosition=`${mod(ox,tileT)}px ${mod(oy,tileT)}px`; }
+  function stopInertia(){ if(raf){ cancelAnimationFrame(raf); raf=0; } }
+  pan.addEventListener('pointerdown',e=>{ stopInertia(); pan.setPointerCapture(e.pointerId);
+    drag={id:e.pointerId,x0:e.clientX,y0:e.clientY,lx:e.clientX,ly:e.clientY,axis:$('#lock').checked?null:'xy',hist:[[e.timeStamp,e.clientX,e.clientY]]}; });
+  pan.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.id) return;
+    if(!drag.axis){ const ax=Math.abs(e.clientX-drag.x0), ay=Math.abs(e.clientY-drag.y0);
+      if(Math.max(ax,ay)<8) return; drag.axis=ax>ay?'x':'y'; }
+    const dx=e.clientX-drag.lx, dy=e.clientY-drag.ly; drag.lx=e.clientX; drag.ly=e.clientY;
+    if(drag.axis!=='y') ox+=dx; if(drag.axis!=='x') oy+=dy; drawPan();
+    drag.hist.push([e.timeStamp,e.clientX,e.clientY]); if(drag.hist.length>8) drag.hist.shift(); });
+  function endDrag(e){ if(!drag||e.pointerId!==drag.id) return;
+    const h=drag.hist.filter(p=>e.timeStamp-p[0]<100), a=drag.axis; drag=null;
+    if(!a||h.length<2) return;
+    const [t0,x0,y0]=h[0], [t1,x1,y1]=h[h.length-1], dt=Math.max(1,t1-t0);
+    let vx=a==='y'?0:(x1-x0)/dt, vy=a==='x'?0:(y1-y0)/dt, last=performance.now();
+    const step=now=>{ const f=Math.min(48,now-last); last=now; ox+=vx*f; oy+=vy*f; drawPan();
+      const k=Math.pow(0.995,f); vx*=k; vy*=k;
+      raf=(Math.abs(vx)+Math.abs(vy)>0.02)?requestAnimationFrame(step):0; };
+    raf=requestAnimationFrame(step); }
+  pan.addEventListener('pointerup',endDrag); pan.addEventListener('pointercancel',endDrag);
+  pan.addEventListener('wheel',e=>{ e.preventDefault(); stopInertia(); let dx=-e.deltaX, dy=-e.deltaY;
+    if(e.shiftKey&&!dx){ dx=dy; dy=0; }
+    if($('#lock').checked){ if(Math.abs(dx)>Math.abs(dy)) dy=0; else dx=0; }
+    ox+=dx; oy+=dy; drawPan(); },{passive:false});
 
   function layout(){
     const vv=window.visualViewport;
@@ -294,7 +327,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     // Lo más cerca posible de las esquinas sin cruzarse con las cruces que se mueven por los costados (x = 100/1080 del ancho)
     const kk=w/1080;
     let cpos;
-    if(hMode){ // horizontal: las cruces van por arriba y abajo, así que los círculos se corren hacia adentro en altura
+    if(fMode){ const c0=Math.round(ms*0.9); cpos=[[c0,c0],[w-c0,c0],[c0,h-c0],[w-c0,h-c0]]; }
+    else if(hMode){ // horizontal: las cruces van por arriba y abajo, así que los círculos se corren hacia adentro en altura
       const cx=Math.round(ms*0.9), cy=Math.round(135*kk+ms*0.85);
       cpos=[[cx,cy],[w-cx,cy],[cx,h-cy],[w-cx,h-cy]];
     } else {
@@ -308,7 +342,13 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
       const col=getComputedStyle(plate).getPropertyValue('--mark').trim();
       const cross=(x,y)=>`<rect x="${x-S/2}" y="${y-T/2}" width="${S}" height="${T}"/><rect x="${x-T/2}" y="${y-S/2}" width="${T}" height="${S}"/>`;
       const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${P}"><g fill="${col}">${cross(X,P*0.125)}${cross(w-X,P*0.625)}</g></svg>`;
-      if(hMode){
+      if(fMode){
+        // Libre: grilla de cruces intercaladas que se mueve en X e Y
+        tileT=Math.round(w*0.6);
+        const svgF=`<svg xmlns="http://www.w3.org/2000/svg" width="${tileT}" height="${tileT}"><g fill="${col}">${cross(tileT*0.25,tileT*0.25)}${cross(tileT*0.75,tileT*0.75)}</g></svg>`;
+        pan.style.backgroundImage=showMarks?`url("data:image/svg+xml,${encodeURIComponent(svgF)}")`:'none';
+        pan.style.backgroundSize=`${tileT}px ${tileT}px`; drawPan();
+      } else if(hMode){
         // Horizontal: una "página" por ancho de pantalla; 2 cruces arriba y 2 abajo por página, intercaladas
         const page=lastW?Math.round(scroller.scrollLeft/lastW):Math.floor(PAGES/2);
         const svgH=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><g fill="${col}">${cross(w*0.125,X)}${cross(w*0.625,X)}${cross(w*0.375,h-X)}${cross(w*0.875,h-X)}</g></svg>`;
@@ -325,7 +365,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:$('#showr').checked?'on':'off',sugg:$('#sugr').checked?'on':'off',touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked,dir:val('dir'),snap:$('#snap').checked}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:$('#showr').checked?'on':'off',sugg:$('#sugr').checked?'on':'off',touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked,dir:val('dir'),snap:$('#snap').checked,lock:$('#lock').checked}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
     let bg,mk,lt;
     if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
@@ -340,16 +380,16 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     ta.setAttribute('autocorrect',off?'off':'on');
     ta.setAttribute('autocapitalize',off?'none':'sentences');
     ta.spellcheck=!off;
-    ta.value=''; fakeMode=val('touch')==='kb'&&val('kbtype')==='fake'; kbMode=val('touch')==='kb'&&!fakeMode; scrollMode=val('touch')==='scroll'; hMode=scrollMode&&val('dir')==='h'; lastW=0;
+    ta.value=''; fakeMode=val('touch')==='kb'&&val('kbtype')==='fake'; kbMode=val('touch')==='kb'&&!fakeMode; scrollMode=val('touch')==='scroll'; hMode=scrollMode&&val('dir')==='h'; fMode=scrollMode&&val('dir')==='f'; lastW=0; stopInertia(); ox=0; oy=0; pan.hidden=!fMode;
     scroller.classList.toggle('h',hMode); scroller.classList.toggle('snap',hMode&&$('#snap').checked);
-    track.innerHTML=hMode?'<i></i>'.repeat(PAGES):''; track.style.cssText=''; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
+    track.innerHTML=hMode?'<i></i>'.repeat(PAGES):''; track.style.cssText=''; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode||fMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
     fakekb.hidden=!fakeMode;
     if(fakeMode){ buildKb($('#enye').checked); fakekb.style.opacity=(+op.value/100); fakekb.classList.toggle('hits',$('#hitk').checked||$('#showt').checked); }
     faketext.textContent=''; shift=false; faketext.hidden=!(fakeMode&&$('#showt').checked);
     setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
     document.body.style.background=bg;
     layout(); window.scrollTo(0,0);
-    if(scrollMode&&!hMode) scroller.scrollTop=1000000;
+    if(scrollMode&&!hMode&&!fMode) scroller.scrollTop=1000000;
     try{ if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
     try{ if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen'); }catch(e){}
     layout();
@@ -370,6 +410,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     $('#fixedset').hidden=t!=='scroll';
     $('#dirset').hidden=t!=='scroll';
     $('#snaprow').hidden=val('dir')!=='h';
+    $('#lockrow').hidden=val('dir')!=='f';
     const fake=val('kbtype')==='fake';
     $('#typeset').hidden=t!=='kb';
     $('#fakeset').hidden=!(t==='kb'&&fake);
