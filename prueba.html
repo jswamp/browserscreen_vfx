@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>BrowserScreen VFX</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BrowserScreen">
+<meta name="theme-color" content="#141716">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: panel de seteo tipo claqueta (una columna) → placa a pantalla completa que sigue al viewport visible */
+:root{
+  --bg:#141716; --panel:#1d2120; --line:#343a38; --fg:#e9ecea; --muted:#9aa29f; --accent:#f2c230;
+  --verde:#00b140; --verde-m:#006926;
+  --azul:#0047bb; --azul-m:#002673;
+  --gris:#767676; --gris-m:#3c3c3c;
+  --verde-l:#57cc81; --azul-l:#5786d2; --gris-l:#a5a5a5;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body.live{overflow:hidden;overscroll-behavior:none;touch-action:none}
+
+#setup{max-width:520px;margin:0 auto;padding-block:20px 32px;display:flex;flex-direction:column;gap:20px}
+.slate{border:2px solid var(--fg);display:grid;grid-template-columns:1fr auto}
+.slate h1{min-width:0;font-family:var(--display);font-weight:700;font-size:clamp(20px,6.2vw,34px);letter-spacing:.02em;text-transform:uppercase;margin:0;padding:10px 12px;line-height:1;text-wrap:balance}
+.slate .tag{font-family:var(--display);font-weight:700;background:var(--fg);color:var(--bg);padding:10px 12px;font-size:18px;letter-spacing:.08em;display:flex;align-items:center}
+.slate p{grid-column:1/-1;margin:0;border-top:2px solid var(--fg);padding:10px 12px;color:var(--muted);line-height:1.5}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding:0}
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt span{display:flex;flex-direction:column;gap:6px;border:2px solid var(--line);padding:10px;min-height:44px;justify-content:center;background:var(--panel)}
+.opt input:checked + span{border-color:var(--accent)}
+.opt input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.chip{display:block;height:44px}
+.opt b{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+.opt small{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#go{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--accent);color:#1a1600;border:0;padding:16px;cursor:pointer}
+#go:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
+.notes{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);line-height:1.6;font-size:13px}
+.notes h2{font-family:var(--display);font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg);margin:0 0 6px}
+.notes ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.notes strong{color:var(--fg);font-weight:500}
+.credit{border-top:2px solid var(--fg);padding-top:12px;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);line-height:1.5}
+.credit b{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg)}
+.credit span:first-of-type{color:var(--fg)}
+.credit small{margin-top:6px;font-size:11px}
+
+/* Placa */
+#plate{position:fixed;left:0;top:0;width:100vw;height:100vh;background:var(--plate);z-index:5;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#plate .m{position:absolute;width:var(--ms);height:var(--ms);transform:translate(-50%,-50%);pointer-events:none}
+#plate .m::before,#plate .m::after{content:"";position:absolute;background:var(--mark)}
+#plate .m::before{left:0;right:0;top:50%;height:var(--mt);transform:translateY(-50%)}
+#plate .m::after{top:0;bottom:0;left:50%;width:var(--mt);transform:translateX(-50%)}
+#ta{position:absolute;left:12%;right:12%;top:30%;height:30%;background:transparent;border:0;outline:0;resize:none;
+  color:transparent;caret-color:transparent;font:16px/1.4 var(--mono);padding:0;margin:0;-webkit-text-fill-color:transparent}
+#plate.showtext #ta{color:var(--mark);-webkit-text-fill-color:var(--mark);opacity:.55}
+#hold{position:absolute;left:0;top:0;width:22%;height:12%;}
+#plate .c{position:absolute;width:var(--ms);height:var(--ms);transform:translate(-50%,-50%);border:var(--mt) solid var(--mark);background:var(--light);border-radius:50%;box-sizing:border-box;pointer-events:none}
+#plate .c::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--mt)*1.8);height:calc(var(--mt)*1.8);background:var(--mark);border-radius:50%;transform:translate(-50%,-50%)}
+#hint{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font:500 15px var(--mono);color:var(--mark);text-align:center;pointer-events:none;transition:opacity .4s}
+@media (prefers-reduced-motion:reduce){#hint{transition:none}}
+#scroller{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:none}
+#scroller::-webkit-scrollbar{display:none}
+#track{height:2000000px;background-repeat:repeat-y;background-position:0 0}
+#scroller.h{overflow-x:auto;overflow-y:hidden;touch-action:pan-x}
+#scroller.h #track{height:100%;width:max-content;display:flex;background-repeat:repeat-x}
+#scroller.h #track i{flex:none;width:var(--pw);height:100%}
+#scroller.h.snap{scroll-snap-type:x mandatory}
+#scroller.h.snap #track i{scroll-snap-align:start;scroll-snap-stop:always}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.optmini span{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;padding:8px 10px;min-height:0}
+.optmini b{font-size:15px}
+.optmini .dot{width:18px;height:18px;flex:none;border:1px solid var(--line)}
+.custom{display:grid;gap:10px;padding:12px;border:2px solid var(--line);background:var(--panel)}
+.custom .sl{display:grid;grid-template-columns:16px 1fr 36px;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.custom .sl b{font-family:var(--display);font-size:16px}
+.custom .sl span{text-align:right;color:var(--muted)}
+.custom input[type=range]{width:100%;margin:0;height:28px}
+#sr{accent-color:#e5484d} #sg{accent-color:#3fb950} #sb{accent-color:#4c8dff}
+.chk{display:flex;align-items:center;gap:10px;padding:10px;border:2px solid var(--line);background:var(--panel);cursor:pointer}
+.chk input{width:20px;height:20px;flex:none;margin:0;accent-color:var(--accent)}
+.chk b{white-space:nowrap;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
+.chk small{color:var(--muted);font-size:11px;margin-left:auto;text-align:right}
+#op{accent-color:var(--accent)}
+/* Teclado falso */
+#fakekb{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:rgba(232,234,237,.55);pointer-events:none;font-family:Roboto,"Segoe UI",Arial,sans-serif}
+#fakekb.hits{pointer-events:auto}
+#fakekb .bar{flex:0 0 15%}
+#fakekb .rows{flex:1;display:flex;flex-direction:column;padding:0 .6% 1.5%}
+#fakekb .r{flex:1;display:flex;justify-content:center;gap:1.1%;padding:.7% 0}
+#fakekb .k{flex:0 0 8.8%;display:flex;align-items:center;justify-content:center;background:#fff;color:#202124;border-radius:6px;font-size:clamp(14px,4.6vw,26px);text-transform:lowercase;transition:background .08s}
+#fakekb .k.w15{flex-basis:13.6%} #fakekb .k.sp{flex:1 1 auto} #fakekb .k.fn{background:#c9cdd3;font-size:clamp(12px,3.4vw,20px)}
+#fakekb .k.hit{background:#7a7f86}
+#fakekb .k::after{content:attr(data-l)}
+#faketext{position:absolute;left:12%;right:12%;top:30%;color:var(--mark);opacity:.55;font:16px/1.4 var(--mono);white-space:pre-wrap;word-break:break-word;pointer-events:none}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<main id="setup">
+  <div class="slate">
+    <h1>BrowserScreen</h1>
+    <div class="tag">VFX</div>
+    <p>Fondo de croma con marcas de track para reemplazar la pantalla en post. Puede quedar fija aunque la toquen, abrir el teclado real del celular para planos de manos escribiendo, o scrollear sin fin con marcas que siguen el dedo.</p>
+  </div>
+
+  <fieldset>
+    <legend>Fondo</legend>
+    <div class="swatches">
+      <label class="opt"><input type="radio" name="color" id="c-verde" value="verde" checked><span><i class="chip" style="background:var(--verde)"></i><b>Verde</b><small>RGB 0·177·64</small></span></label>
+      <label class="opt"><input type="radio" name="color" id="c-azul" value="azul"><span><i class="chip" style="background:var(--azul)"></i><b>Azul</b><small>RGB 0·71·187</small></span></label>
+      <label class="opt"><input type="radio" name="color" id="c-gris" value="gris"><span><i class="chip" style="background:var(--gris)"></i><b>Gris</b><small>RGB 118·118·118</small></span></label>
+    </div>
+    <label class="opt optmini"><input type="radio" name="color" id="c-custom" value="custom"><span><i class="dot" id="customDot"></i><b>Personalizado</b><small id="customLabel">RGB 0·177·64</small></span></label>
+    <div class="custom" id="customPanel">
+      <label class="sl" for="sr"><b>R</b><input type="range" id="sr" min="0" max="255" value="0"><span id="vr">0</span></label>
+      <label class="sl" for="sg"><b>G</b><input type="range" id="sg" min="0" max="255" value="177"><span id="vg">177</span></label>
+      <label class="sl" for="sb"><b>B</b><input type="range" id="sb" min="0" max="255" value="64"><span id="vb">64</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Marcas de track</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="marks" id="m-4" value="4" checked><span><b>4 esquinas</b><small>Las de abajo suben si se abre el teclado</small></span></label>
+      <label class="opt"><input type="radio" name="marks" id="m-0" value="0"><span><b>Sin marcas</b><small>Cámara y celular quietos</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Al tocar la pantalla</legend>
+    <div class="row3">
+      <label class="opt"><input type="radio" name="touch" id="k-none" value="none" checked><span><b>No hacer nada</b><small>Pantalla fija aunque la toquen</small></span></label>
+      <label class="opt"><input type="radio" name="touch" id="k-kb" value="kb"><span><b>Abrir teclado</b><small>Para planos escribiendo</small></span></label>
+      <label class="opt"><input type="radio" name="touch" id="k-scroll" value="scroll"><span><b>Scroll</b><small>Las marcas siguen el dedo</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset id="dirset">
+    <legend>Dirección</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="dir" id="d-v" value="v" checked><span><b>Vertical</b><small>Arriba y abajo, como un feed o un chat</small></span></label>
+      <label class="opt"><input type="radio" name="dir" id="d-h" value="h"><span><b>Horizontal</b><small>A los costados, como fotos o historias</small></span></label>
+    </div>
+    <label class="chk" for="snap" id="snaprow"><input type="checkbox" id="snap" checked><b>Pasar de a una</b><small>Al soltar, se acomoda en la siguiente</small></label>
+  </fieldset>
+
+  <fieldset id="fixedset">
+    <legend>Marcas fijas</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="fixed" id="f-on" value="on" checked><span><b>Círculos</b><small>4 fijos, para el corner pin</small></span></label>
+      <label class="opt"><input type="radio" name="fixed" id="f-off" value="off"><span><b>Sin fijas</b><small>Solo las cruces que se mueven</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset id="typeset">
+    <legend>Tipo de teclado</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="kbtype" id="kt-real" value="real" checked><span><b>Real</b><small>El teclado del celular</small></span></label>
+      <label class="opt"><input type="radio" name="kbtype" id="kt-fake" value="fake"><span><b>Falso</b><small>Dibujado, la pantalla no responde</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset id="fakeset">
+    <legend>Teclado falso</legend>
+    <div class="custom">
+      <label class="sl" for="op" style="grid-template-columns:auto 1fr 44px"><b style="font-size:14px;letter-spacing:.08em">OPACIDAD</b><input type="range" id="op" min="0" max="75" value="20"><span id="vop">20%</span></label>
+    </div>
+    <label class="chk" for="enye"><input type="checkbox" id="enye" checked><b>Con ñ</b><small>Teclado en español</small></label>
+    <label class="chk" for="showt"><input type="checkbox" id="showt"><b>Mostrar texto</b><small>Lo que se tipea aparece tenue</small></label>
+    <label class="chk" for="hitk"><input type="checkbox" id="hitk"><b>Iluminar tecla</b><small>Destello al tocar · se ve en cámara</small></label>
+  </fieldset>
+
+  <fieldset id="realset">
+    <legend>Teclado real</legend>
+    <label class="chk" for="showr"><input type="checkbox" id="showr"><b>Mostrar texto</b><small>Lo que se tipea aparece tenue</small></label>
+    <label class="chk" for="sugr"><input type="checkbox" id="sugr"><b>Sugerencias</b><small>Autocompletar, si el teclado lo permite</small></label>
+  </fieldset>
+
+  <button id="go" type="button">Empezar</button>
+
+  <section class="notes">
+    <h2>En set</h2>
+    <ol>
+      <li>Con <strong>No hacer nada</strong>, la pantalla queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la pantalla para abrirlo, o elegí un teclado <strong>falso</strong> dibujado: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces se mueven con el dedo, sin fin: por los costados en vertical, por arriba y abajo en horizontal. Los 4 círculos quedan fijos para el corner pin.</li>
+      <li><strong>Para volver a este menú</strong>, mantené apretada la esquina superior izquierda 2 segundos. Al volver se borra lo escrito.</li>
+      <li>Modo avión, <strong>brillo manual y bajo</strong>, teclado en modo oscuro y bloqueo automático de pantalla desactivado.</li>
+      <li>El actor escribe <strong>el texto real del guion</strong>, así los dedos caen en las letras correctas.</li>
+      <li>En iPhone, conviene fijar la página con <strong>Acceso Guiado</strong> (Tacto activado) para que no se salga del navegador.</li>
+    </ol>
+  </section>
+
+  <footer class="credit">
+    <b>Ante cualquier duda, consultar con supervisión de VFX</b>
+    <span>julian.stirparo@gmail.com · +54 9 11 6669 4390</span>
+    <small>© 2026 Julián Stirparo Pantano</small>
+  </footer>
+</main>
+
+<div id="plate" hidden>
+  <div id="scroller" hidden><div id="track"></div></div>
+  <div class="m" id="m1"></div><div class="m" id="m2"></div><div class="m" id="m3"></div><div class="m" id="m4"></div>
+  <div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div>
+  <div id="fakekb" hidden></div>
+  <div id="faketext" hidden></div>
+  <textarea id="ta" aria-label="Texto del actor" rows="3"></textarea>
+  <div id="hint">Tocá para abrir el teclado</div>
+  <div id="hold" aria-hidden="true"></div>
+</div>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  const setup=$('#setup'), plate=$('#plate'), ta=$('#ta'), hint=$('#hint'), hold=$('#hold');
+  const marks=[$('#m1'),$('#m2'),$('#m3'),$('#m4')];
+  const circles=[$('#c1'),$('#c2'),$('#c3'),$('#c4')];
+  let fixedOn=true;
+  const COLORS={verde:['--verde','--verde-m','--verde-l'],azul:['--azul','--azul-m','--azul-l'],gris:['--gris','--gris-m','--gris-l']};
+  let showMarks=true, wake=null, kbMode=false, scrollMode=false, fakeMode=false, hMode=false, lastW=0;
+  const PAGES=2001;
+  const fakekb=$('#fakekb');
+  const scroller=$('#scroller'), track=$('#track');
+  const val=n=>document.querySelector(`input[name="${n}"]:checked`).value;
+
+  const sl=[$('#sr'),$('#sg'),$('#sb')], sv=[$('#vr'),$('#vg'),$('#vb')];
+  const rgb=()=>sl.map(x=>+x.value);
+  function syncCustom(){ const [r,g,b]=rgb(); sv.forEach((v,i)=>v.textContent=sl[i].value);
+    $('#customDot').style.background=`rgb(${r},${g},${b})`; $('#customLabel').textContent=`RGB ${r}·${g}·${b}`; }
+  try{const s=JSON.parse(localStorage.getItem('placa')||'{}');
+    if(typeof s.op==='number'){ $('#op').value=Math.min(75,s.op); $('#vop').textContent=$('#op').value+'%'; }
+    if(typeof s.enye==='boolean') $('#enye').checked=s.enye;
+    if(typeof s.hitk==='boolean') $('#hitk').checked=s.hitk;
+    if(typeof s.showt==='boolean') $('#showt').checked=s.showt;
+    if(typeof s.snap==='boolean') $('#snap').checked=s.snap;
+    for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
+      if(k==='text'){ $('#showr').checked=v==='on'; continue; }
+      if(k==='sugg'){ $('#sugr').checked=v==='on'; continue; }
+      if(['op','enye','hitk','showt','snap'].includes(k)) continue;
+      const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
+  sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
+  syncCustom();
+  const op=$('#op'); op.addEventListener('input',()=>{$('#vop').textContent=op.value+'%';});
+  function buildKb(enye){
+    const rows=[[...'qwertyuiop'], enye?[...'asdfghjklñ']:[...'asdfghjkl'], ['⇧',...'zxcvbnm','⌫'], ['?123',',','','.','↵']];
+    const k=(t)=>{ const fn=['⇧','⌫','?123','↵'].includes(t); const cls=['k']; if(fn) cls.push('fn','w15'); if(t==='') cls.push('sp'); return `<div class="${cls.join(' ')}" data-l="${t}"></div>`; };
+    fakekb.innerHTML='<div class="bar"></div><div class="rows">'+rows.map(r=>'<div class="r">'+r.map(k).join('')+'</div>').join('')+'</div>';
+  }
+  // Bloquea los gestos del navegador (Tocar para buscar, selección, menú) cuando la pantalla no debe responder
+  plate.addEventListener('touchstart',e=>{ if(!plate.hidden && !kbMode && !scrollMode) e.preventDefault(); },{passive:false});
+  plate.addEventListener('contextmenu',e=>e.preventDefault());
+  plate.addEventListener('selectstart',e=>e.preventDefault());
+  const faketext=$('#faketext'); let shift=false;
+  fakekb.addEventListener('pointerdown',e=>{ const key=e.target.closest('.k'); if(!key) return;
+    if($('#hitk').checked){ key.classList.add('hit'); setTimeout(()=>key.classList.remove('hit'),130); }
+    if(!$('#showt').checked) return;
+    const l=key.dataset.l; let t=faketext.textContent;
+    if(l==='⌫') t=t.slice(0,-1);
+    else if(l==='⇧'){ shift=!shift; return; }
+    else if(l==='↵') t+='\n';
+    else if(l==='?123') return;
+    else if(l==='') t+=' ';
+    else { t+=shift?l.toUpperCase():l; shift=false; }
+    faketext.textContent=t; });
+
+  function layout(){
+    const vv=window.visualViewport;
+    const w=vv?vv.width:innerWidth, h=vv?vv.height:innerHeight, top=vv?vv.offsetTop:0, left=vv?vv.offsetLeft:0;
+    plate.style.top=top+'px'; plate.style.left=left+'px';
+    plate.style.width=w+'px'; plate.style.height=h+'px';
+    const ms=Math.round(Math.min(w,h)*0.065), mt=Math.max(3,Math.round(ms*0.14));
+    plate.style.setProperty('--ms',ms+'px'); plate.style.setProperty('--mt',mt+'px');
+    const kbH=fakeMode?Math.round(Math.min(h*0.38,w*0.78)):0;
+    fakekb.style.height=kbH+'px';
+    const mx=Math.round(w*0.09), myTop=Math.round(Math.max(h*0.06,ms)), myBot=Math.round(h-kbH-ms*1.1);
+    const pos=[[mx,myTop],[w-mx,myTop],[mx,myBot],[w-mx,myBot]];
+    marks.forEach((m,i)=>{m.hidden=!showMarks||scrollMode; m.style.left=pos[i][0]+'px'; m.style.top=pos[i][1]+'px';});
+    // Círculos fijos (modo Scroll): más adentro que las cruces de los costados, para que no se pisen
+    // Lo más cerca posible de las esquinas sin cruzarse con las cruces que se mueven por los costados (x = 100/1080 del ancho)
+    const kk=w/1080;
+    let cpos;
+    if(hMode){ // horizontal: las cruces van por arriba y abajo, así que los círculos se corren hacia adentro en altura
+      const cx=Math.round(ms*0.9), cy=Math.round(135*kk+ms*0.85);
+      cpos=[[cx,cy],[w-cx,cy],[cx,h-cy],[w-cx,h-cy]];
+    } else {
+      const cx=Math.round(135*kk+ms*0.85), cyT=Math.round(ms*0.9), cyB=Math.round(h-ms*0.9);
+      cpos=[[cx,cyT],[w-cx,cyT],[cx,cyB],[w-cx,cyB]];
+    }
+    circles.forEach((c,i)=>{c.hidden=!(scrollMode&&fixedOn); c.style.left=cpos[i][0]+'px'; c.style.top=cpos[i][1]+'px';});
+    if(scrollMode){
+      // Misma geometría que los JPG de scroll (1080 px de ancho): cruz de 70 px, trazo 10 px, x=100 px, una cada 1280 px por columna, intercaladas
+      const k=w/1080, P=Math.round(1280*k), S=70*k, T=Math.max(2,10*k), X=100*k;
+      const col=getComputedStyle(plate).getPropertyValue('--mark').trim();
+      const cross=(x,y)=>`<rect x="${x-S/2}" y="${y-T/2}" width="${S}" height="${T}"/><rect x="${x-T/2}" y="${y-S/2}" width="${T}" height="${S}"/>`;
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${P}"><g fill="${col}">${cross(X,P*0.125)}${cross(w-X,P*0.625)}</g></svg>`;
+      if(hMode){
+        // Horizontal: una "página" por ancho de pantalla; 2 cruces arriba y 2 abajo por página, intercaladas
+        const page=lastW?Math.round(scroller.scrollLeft/lastW):Math.floor(PAGES/2);
+        const svgH=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><g fill="${col}">${cross(w*0.125,X)}${cross(w*0.625,X)}${cross(w*0.375,h-X)}${cross(w*0.875,h-X)}</g></svg>`;
+        track.style.backgroundImage=showMarks?`url("data:image/svg+xml,${encodeURIComponent(svgH)}")`:'none';
+        track.style.backgroundSize=`${w}px ${h}px`;
+        scroller.style.setProperty('--pw',w+'px');
+        if(w!==lastW){ lastW=w; scroller.scrollLeft=page*w; }
+      } else {
+        track.style.backgroundImage=showMarks?`url("data:image/svg+xml,${encodeURIComponent(svg)}")`:'none';
+        track.style.backgroundSize=`${w}px ${P}px`;
+      }
+    }
+  }
+
+  async function start(){
+    const c=val('color');
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:$('#showr').checked?'on':'off',sugg:$('#sugr').checked?'on':'off',touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked,dir:val('dir'),snap:$('#snap').checked}));}catch(e){}
+    const root=getComputedStyle(document.documentElement);
+    let bg,mk,lt;
+    if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
+    else { bg=root.getPropertyValue(COLORS[c][0]); mk=root.getPropertyValue(COLORS[c][1]); lt=root.getPropertyValue(COLORS[c][2]); }
+    plate.style.setProperty('--plate',bg);
+    plate.style.setProperty('--mark',mk);
+    plate.style.setProperty('--light',lt);
+    showMarks=val('marks')==='4';
+    plate.classList.toggle('showtext',$('#showr').checked);
+    const off=!$('#sugr').checked;
+    ta.setAttribute('autocomplete',off?'off':'on');
+    ta.setAttribute('autocorrect',off?'off':'on');
+    ta.setAttribute('autocapitalize',off?'none':'sentences');
+    ta.spellcheck=!off;
+    ta.value=''; fakeMode=val('touch')==='kb'&&val('kbtype')==='fake'; kbMode=val('touch')==='kb'&&!fakeMode; scrollMode=val('touch')==='scroll'; hMode=scrollMode&&val('dir')==='h'; lastW=0;
+    scroller.classList.toggle('h',hMode); scroller.classList.toggle('snap',hMode&&$('#snap').checked);
+    track.innerHTML=hMode?'<i></i>'.repeat(PAGES):''; track.style.cssText=''; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
+    fakekb.hidden=!fakeMode;
+    if(fakeMode){ buildKb($('#enye').checked); fakekb.style.opacity=(+op.value/100); fakekb.classList.toggle('hits',$('#hitk').checked||$('#showt').checked); }
+    faketext.textContent=''; shift=false; faketext.hidden=!(fakeMode&&$('#showt').checked);
+    setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
+    document.body.style.background=bg;
+    layout(); window.scrollTo(0,0);
+    if(scrollMode&&!hMode) scroller.scrollTop=1000000;
+    try{ if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
+    try{ if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen'); }catch(e){}
+    layout();
+  }
+
+  function stop(){
+    ta.blur(); ta.value=''; faketext.textContent='';
+    plate.hidden=true; setup.hidden=false; document.body.classList.remove('live');
+    document.body.style.background='';
+    try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+    try{ if(wake){wake.release(); wake=null;} }catch(e){}
+    window.scrollTo(0,0);
+  }
+
+  $('#go').addEventListener('click',start);
+  function syncPanels(){
+    const t=val('touch');
+    $('#fixedset').hidden=t!=='scroll';
+    $('#dirset').hidden=t!=='scroll';
+    $('#snaprow').hidden=val('dir')!=='h';
+    const fake=val('kbtype')==='fake';
+    $('#typeset').hidden=t!=='kb';
+    $('#fakeset').hidden=!(t==='kb'&&fake);
+    $('#realset').hidden=!(t==='kb'&&!fake);
+    $('#customPanel').hidden=val('color')!=='custom';
+  }
+  document.querySelectorAll('input[name="touch"],input[name="color"],input[name="kbtype"],input[name="dir"]').forEach(r=>r.addEventListener('change',syncPanels));
+  syncPanels();
+
+  plate.addEventListener('click',e=>{ if(kbMode && e.target!==hold){ ta.focus({preventScroll:true}); hint.style.opacity='0'; }});
+  ta.addEventListener('focus',()=>{hint.style.opacity='0'; setTimeout(layout,50); setTimeout(layout,400);});
+
+  let t=null;
+  const cancel=()=>{clearTimeout(t); t=null;};
+  hold.addEventListener('pointerdown',e=>{e.preventDefault(); cancel(); t=setTimeout(stop,2000);});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>hold.addEventListener(ev,cancel));
+  hold.addEventListener('click',()=>{ if(kbMode) ta.focus({preventScroll:true}); });
+
+  if(window.visualViewport){ visualViewport.addEventListener('resize',()=>{if(!plate.hidden) layout();});
+    visualViewport.addEventListener('scroll',()=>{if(!plate.hidden) layout();}); }
+  window.addEventListener('resize',()=>{if(!plate.hidden) layout();});
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible' && !plate.hidden){ try{ if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen'); }catch(e){} }
+  });
+})();
+</script>
+
+</body>
+</html>
