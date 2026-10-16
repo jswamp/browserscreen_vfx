@@ -21,6 +21,7 @@
   --verde:#00b140; --verde-m:#006926;
   --azul:#0047bb; --azul-m:#002673;
   --gris:#767676; --gris-m:#3c3c3c;
+  --verde-l:#66d08c; --azul-l:#6691d6; --gris-l:#adadad;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
@@ -69,7 +70,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   color:transparent;caret-color:transparent;font:16px/1.4 var(--mono);padding:0;margin:0;-webkit-text-fill-color:transparent}
 #plate.showtext #ta{color:var(--mark);-webkit-text-fill-color:var(--mark);opacity:.55}
 #hold{position:absolute;left:0;top:0;width:22%;height:12%;}
-#plate .c{position:absolute;width:var(--ms);height:var(--ms);transform:translate(-50%,-50%);border:var(--mt) solid var(--mark);border-radius:50%;box-sizing:border-box;pointer-events:none}
+#plate .c{position:absolute;width:calc(var(--ms)*1.45);height:calc(var(--ms)*1.45);transform:translate(-50%,-50%);border:var(--mt) solid var(--mark);background:var(--light);border-radius:50%;box-sizing:border-box;pointer-events:none}
 #plate .c::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--mt)*1.8);height:calc(var(--mt)*1.8);background:var(--mark);border-radius:50%;transform:translate(-50%,-50%)}
 #hint{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font:500 15px var(--mono);color:var(--mark);text-align:center;pointer-events:none;transition:opacity .4s}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
@@ -176,7 +177,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   const marks=[$('#m1'),$('#m2'),$('#m3'),$('#m4')];
   const circles=[$('#c1'),$('#c2'),$('#c3'),$('#c4')];
   let fixedOn=true;
-  const COLORS={verde:['--verde','--verde-m'],azul:['--azul','--azul-m'],gris:['--gris','--gris-m']};
+  const COLORS={verde:['--verde','--verde-m','--verde-l'],azul:['--azul','--azul-m','--azul-l'],gris:['--gris','--gris-m','--gris-l']};
   let showMarks=true, wake=null, kbMode=false, scrollMode=false;
   const scroller=$('#scroller'), track=$('#track');
   const val=n=>document.querySelector(`input[name="${n}"]:checked`).value;
@@ -215,6 +216,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     const root=getComputedStyle(document.documentElement);
     plate.style.setProperty('--plate',root.getPropertyValue(COLORS[c][0]));
     plate.style.setProperty('--mark',root.getPropertyValue(COLORS[c][1]));
+    plate.style.setProperty('--light',root.getPropertyValue(COLORS[c][2]));
     showMarks=val('marks')==='4';
     plate.classList.toggle('showtext',val('text')==='on');
     const off=val('sugg')==='off';
