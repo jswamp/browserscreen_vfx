@@ -1,6 +1,6 @@
 {
-  "name": "Placa VFX",
-  "short_name": "Placa VFX",
+  "name": "BrowserScreen VFX",
+  "short_name": "BrowserScreen",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

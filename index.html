@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Placa VFX</title>
+<title>BrowserScreen VFX</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Placa VFX">
+<meta name="apple-mobile-web-app-title" content="BrowserScreen">
 <meta name="theme-color" content="#141716">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -32,7 +32,7 @@ body.live{overflow:hidden;overscroll-behavior:none;touch-action:none}
 
 #setup{max-width:520px;margin:0 auto;padding-block:20px 32px;display:flex;flex-direction:column;gap:20px}
 .slate{border:2px solid var(--fg);display:grid;grid-template-columns:1fr auto}
-.slate h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.02em;text-transform:uppercase;margin:0;padding:10px 12px;line-height:1;text-wrap:balance}
+.slate h1{min-width:0;font-family:var(--display);font-weight:700;font-size:clamp(20px,6.2vw,34px);letter-spacing:.02em;text-transform:uppercase;margin:0;padding:10px 12px;line-height:1;text-wrap:balance}
 .slate .tag{font-family:var(--display);font-weight:700;background:var(--fg);color:var(--bg);padding:10px 12px;font-size:18px;letter-spacing:.08em;display:flex;align-items:center}
 .slate p{grid-column:1/-1;margin:0;border-top:2px solid var(--fg);padding:10px 12px;color:var(--muted);line-height:1.5}
 fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -69,6 +69,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   color:transparent;caret-color:transparent;font:16px/1.4 var(--mono);padding:0;margin:0;-webkit-text-fill-color:transparent}
 #plate.showtext #ta{color:var(--mark);-webkit-text-fill-color:var(--mark);opacity:.55}
 #hold{position:absolute;left:0;top:0;width:22%;height:12%;}
+#plate .c{position:absolute;width:var(--ms);height:var(--ms);transform:translate(-50%,-50%);border:var(--mt) solid var(--mark);border-radius:50%;box-sizing:border-box;pointer-events:none}
+#plate .c::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--mt)*1.8);height:calc(var(--mt)*1.8);background:var(--mark);border-radius:50%;transform:translate(-50%,-50%)}
 #hint{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font:500 15px var(--mono);color:var(--mark);text-align:center;pointer-events:none;transition:opacity .4s}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
 #scroller{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:none}
@@ -82,7 +84,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
 <main id="setup">
   <div class="slate">
-    <h1>Placa VFX</h1>
+    <h1>BrowserScreen</h1>
     <div class="tag">VFX</div>
     <p>Fondo de croma con marcas de track para reemplazar la pantalla en post. Puede quedar fija aunque la toquen, abrir el teclado real del celular para planos de manos escribiendo, o scrollear sin fin con marcas que siguen el dedo.</p>
   </div>
@@ -113,6 +115,14 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     </div>
   </fieldset>
 
+  <fieldset id="fixedset">
+    <legend>Marcas fijas · solo en Scroll</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="fixed" id="f-on" value="on" checked><span><b>Círculos</b><small>4 fijos, para el corner pin</small></span></label>
+      <label class="opt"><input type="radio" name="fixed" id="f-off" value="off"><span><b>Sin fijas</b><small>Solo las cruces que se mueven</small></span></label>
+    </div>
+  </fieldset>
+
   <fieldset>
     <legend>Texto que se escribe</legend>
     <div class="row">
@@ -134,7 +144,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   <section class="notes">
     <h2>En set</h2>
     <ol>
-      <li>Con <strong>No hacer nada</strong>, la placa queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la placa para abrirlo: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces de los costados se mueven con el dedo, sin fin.</li>
+      <li>Con <strong>No hacer nada</strong>, la placa queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la placa para abrirlo: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces de los costados se mueven con el dedo, sin fin; los 4 círculos quedan fijos para el corner pin.</li>
       <li><strong>Para volver a este menú</strong>, mantené apretada la esquina superior izquierda 2 segundos. Al volver se borra lo escrito.</li>
       <li>Modo avión, <strong>brillo manual y bajo</strong>, teclado en modo oscuro y bloqueo automático de pantalla desactivado.</li>
       <li>El actor escribe <strong>el texto real del guion</strong>, así los dedos caen en las letras correctas.</li>
@@ -153,6 +163,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 <div id="plate" hidden>
   <div id="scroller" hidden><div id="track"></div></div>
   <div class="m" id="m1"></div><div class="m" id="m2"></div><div class="m" id="m3"></div><div class="m" id="m4"></div>
+  <div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div>
   <textarea id="ta" aria-label="Texto del actor" rows="3"></textarea>
   <div id="hint">Tocá para abrir el teclado</div>
   <div id="hold" aria-hidden="true"></div>
@@ -163,6 +174,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   const $=s=>document.querySelector(s);
   const setup=$('#setup'), plate=$('#plate'), ta=$('#ta'), hint=$('#hint'), hold=$('#hold');
   const marks=[$('#m1'),$('#m2'),$('#m3'),$('#m4')];
+  const circles=[$('#c1'),$('#c2'),$('#c3'),$('#c4')];
+  let fixedOn=true;
   const COLORS={verde:['--verde','--verde-m'],azul:['--azul','--azul-m'],gris:['--gris','--gris-m']};
   let showMarks=true, wake=null, kbMode=false, scrollMode=false;
   const scroller=$('#scroller'), track=$('#track');
@@ -181,6 +194,10 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     const mx=Math.round(w*0.09), myTop=Math.round(Math.max(h*0.06,ms)), myBot=Math.round(h-ms*1.1);
     const pos=[[mx,myTop],[w-mx,myTop],[mx,myBot],[w-mx,myBot]];
     marks.forEach((m,i)=>{m.hidden=!showMarks||scrollMode; m.style.left=pos[i][0]+'px'; m.style.top=pos[i][1]+'px';});
+    // Círculos fijos (modo Scroll): más adentro que las cruces de los costados, para que no se pisen
+    const cx=Math.round(w*0.25);
+    const cpos=[[cx,myTop],[w-cx,myTop],[cx,myBot],[w-cx,myBot]];
+    circles.forEach((c,i)=>{c.hidden=!(scrollMode&&fixedOn); c.style.left=cpos[i][0]+'px'; c.style.top=cpos[i][1]+'px';});
     if(scrollMode){
       // Misma geometría que los JPG de scroll (1080 px de ancho): cruz de 70 px, trazo 10 px, x=100 px, una cada 1280 px por columna, intercaladas
       const k=w/1080, P=Math.round(1280*k), S=70*k, T=Math.max(2,10*k), X=100*k;
@@ -194,7 +211,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch')}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed')}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
     plate.style.setProperty('--plate',root.getPropertyValue(COLORS[c][0]));
     plate.style.setProperty('--mark',root.getPropertyValue(COLORS[c][1]));
@@ -205,7 +222,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     ta.setAttribute('autocorrect',off?'off':'on');
     ta.setAttribute('autocapitalize',off?'none':'sentences');
     ta.spellcheck=!off;
-    ta.value=''; kbMode=val('touch')==='kb'; scrollMode=val('touch')==='scroll'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
+    ta.value=''; kbMode=val('touch')==='kb'; scrollMode=val('touch')==='scroll'; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
     setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
     document.documentElement.style.setProperty('--placa-bg',root.getPropertyValue(COLORS[c][0]));
     document.body.style.background=root.getPropertyValue(COLORS[c][0]);
@@ -226,6 +243,10 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   }
 
   $('#go').addEventListener('click',start);
+  const fixedset=$('#fixedset');
+  const syncFixed=()=>{fixedset.hidden=val('touch')!=='scroll';};
+  document.querySelectorAll('input[name="touch"]').forEach(r=>r.addEventListener('change',syncFixed));
+  syncFixed();
 
   plate.addEventListener('click',e=>{ if(kbMode && e.target!==hold){ ta.focus({preventScroll:true}); hint.style.opacity='0'; }});
   ta.addEventListener('focus',()=>{hint.style.opacity='0'; setTimeout(layout,50); setTimeout(layout,400);});
