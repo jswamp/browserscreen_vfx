@@ -78,6 +78,15 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 #scroller::-webkit-scrollbar{display:none}
 #track{height:2000000px;background-repeat:repeat-y;background-position:0 0}
 .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.optmini span{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;padding:8px 10px;min-height:0}
+.optmini b{font-size:15px}
+.optmini .dot{width:18px;height:18px;flex:none;border:1px solid var(--line)}
+.custom{display:grid;gap:10px;padding:12px;border:2px solid var(--line);background:var(--panel)}
+.custom .sl{display:grid;grid-template-columns:16px 1fr 36px;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.custom .sl b{font-family:var(--display);font-size:16px}
+.custom .sl span{text-align:right;color:var(--muted)}
+.custom input[type=range]{width:100%;margin:0;height:28px}
+#sr{accent-color:#e5484d} #sg{accent-color:#3fb950} #sb{accent-color:#4c8dff}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -96,6 +105,12 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
       <label class="opt"><input type="radio" name="color" id="c-verde" value="verde" checked><span><i class="chip" style="background:var(--verde)"></i><b>Verde</b><small>RGB 0·177·64</small></span></label>
       <label class="opt"><input type="radio" name="color" id="c-azul" value="azul"><span><i class="chip" style="background:var(--azul)"></i><b>Azul</b><small>RGB 0·71·187</small></span></label>
       <label class="opt"><input type="radio" name="color" id="c-gris" value="gris"><span><i class="chip" style="background:var(--gris)"></i><b>Gris</b><small>RGB 118·118·118</small></span></label>
+    </div>
+    <label class="opt optmini"><input type="radio" name="color" id="c-custom" value="custom"><span><i class="dot" id="customDot"></i><b>Personalizado</b><small id="customLabel">RGB 0·177·64</small></span></label>
+    <div class="custom" id="customPanel">
+      <label class="sl" for="sr"><b>R</b><input type="range" id="sr" min="0" max="255" value="0"><span id="vr">0</span></label>
+      <label class="sl" for="sg"><b>G</b><input type="range" id="sg" min="0" max="255" value="177"><span id="vg">177</span></label>
+      <label class="sl" for="sb"><b>B</b><input type="range" id="sb" min="0" max="255" value="64"><span id="vb">64</span></label>
     </div>
   </fieldset>
 
@@ -124,16 +139,16 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     </div>
   </fieldset>
 
-  <fieldset>
-    <legend>Texto que se escribe</legend>
+  <fieldset id="textset">
+    <legend>Texto que se escribe · solo en Abrir teclado</legend>
     <div class="row">
       <label class="opt"><input type="radio" name="text" id="t-off" value="off" checked><span><b>Oculto</b><small>Pantalla limpia</small></span></label>
       <label class="opt"><input type="radio" name="text" id="t-on" value="on"><span><b>Tenue</b><small>El actor ve lo que escribe</small></span></label>
     </div>
   </fieldset>
 
-  <fieldset>
-    <legend>Barra de sugerencias</legend>
+  <fieldset id="suggset">
+    <legend>Barra de sugerencias · solo en Abrir teclado</legend>
     <div class="row">
       <label class="opt"><input type="radio" name="sugg" id="s-off" value="off" checked><span><b>Apagada</b><small>Si el teclado lo permite</small></span></label>
       <label class="opt"><input type="radio" name="sugg" id="s-on" value="on"><span><b>Normal</b><small>Como en el uso diario</small></span></label>
@@ -182,8 +197,15 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   const scroller=$('#scroller'), track=$('#track');
   const val=n=>document.querySelector(`input[name="${n}"]:checked`).value;
 
+  const sl=[$('#sr'),$('#sg'),$('#sb')], sv=[$('#vr'),$('#vg'),$('#vb')];
+  const rgb=()=>sl.map(x=>+x.value);
+  function syncCustom(){ const [r,g,b]=rgb(); sv.forEach((v,i)=>v.textContent=sl[i].value);
+    $('#customDot').style.background=`rgb(${r},${g},${b})`; $('#customLabel').textContent=`RGB ${r}·${g}·${b}`; }
   try{const s=JSON.parse(localStorage.getItem('placa')||'{}');
-    for(const [k,v] of Object.entries(s)){const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
+    for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
+      const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
+  sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
+  syncCustom();
 
   function layout(){
     const vv=window.visualViewport;
@@ -213,11 +235,14 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed')}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed'),custom:rgb()}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
-    plate.style.setProperty('--plate',root.getPropertyValue(COLORS[c][0]));
-    plate.style.setProperty('--mark',root.getPropertyValue(COLORS[c][1]));
-    plate.style.setProperty('--light',root.getPropertyValue(COLORS[c][2]));
+    let bg,mk,lt;
+    if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
+    else { bg=root.getPropertyValue(COLORS[c][0]); mk=root.getPropertyValue(COLORS[c][1]); lt=root.getPropertyValue(COLORS[c][2]); }
+    plate.style.setProperty('--plate',bg);
+    plate.style.setProperty('--mark',mk);
+    plate.style.setProperty('--light',lt);
     showMarks=val('marks')==='4';
     plate.classList.toggle('showtext',val('text')==='on');
     const off=val('sugg')==='off';
@@ -227,8 +252,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     ta.spellcheck=!off;
     ta.value=''; kbMode=val('touch')==='kb'; scrollMode=val('touch')==='scroll'; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
     setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
-    document.documentElement.style.setProperty('--placa-bg',root.getPropertyValue(COLORS[c][0]));
-    document.body.style.background=root.getPropertyValue(COLORS[c][0]);
+    document.body.style.background=bg;
     layout(); window.scrollTo(0,0);
     if(scrollMode) scroller.scrollTop=1000000;
     try{ if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
@@ -246,10 +270,15 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   }
 
   $('#go').addEventListener('click',start);
-  const fixedset=$('#fixedset');
-  const syncFixed=()=>{fixedset.hidden=val('touch')!=='scroll';};
-  document.querySelectorAll('input[name="touch"]').forEach(r=>r.addEventListener('change',syncFixed));
-  syncFixed();
+  function syncPanels(){
+    const t=val('touch');
+    $('#fixedset').hidden=t!=='scroll';
+    $('#textset').hidden=t!=='kb';
+    $('#suggset').hidden=t!=='kb';
+    $('#customPanel').hidden=val('color')!=='custom';
+  }
+  document.querySelectorAll('input[name="touch"],input[name="color"]').forEach(r=>r.addEventListener('change',syncPanels));
+  syncPanels();
 
   plate.addEventListener('click',e=>{ if(kbMode && e.target!==hold){ ta.focus({preventScroll:true}); hint.style.opacity='0'; }});
   ta.addEventListener('focus',()=>{hint.style.opacity='0'; setTimeout(layout,50); setTimeout(layout,400);});
