@@ -102,6 +102,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 #fakekb .k.w15{flex-basis:13.6%} #fakekb .k.sp{flex:1 1 auto} #fakekb .k.fn{background:#c9cdd3;font-size:clamp(12px,3.4vw,20px)}
 #fakekb .k.hit{background:#7a7f86}
 #fakekb .k::after{content:attr(data-l)}
+#faketext{position:absolute;left:12%;right:12%;top:30%;color:var(--mark);opacity:.55;font:16px/1.4 var(--mono);white-space:pre-wrap;word-break:break-word;pointer-events:none}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -168,6 +169,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
       <label class="sl" for="op" style="grid-template-columns:auto 1fr 44px"><b style="font-size:14px;letter-spacing:.08em">OPACIDAD</b><input type="range" id="op" min="0" max="75" value="20"><span id="vop">20%</span></label>
     </div>
     <label class="chk" for="enye"><input type="checkbox" id="enye" checked><b>Con ñ</b><small>Teclado en español</small></label>
+    <label class="chk" for="showt"><input type="checkbox" id="showt"><b>Mostrar texto</b><small>Lo que se tipea aparece tenue</small></label>
     <label class="chk" for="hitk"><input type="checkbox" id="hitk"><b>Iluminar tecla</b><small>Destello al tocar · se ve en cámara</small></label>
   </fieldset>
 
@@ -212,6 +214,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   <div class="m" id="m1"></div><div class="m" id="m2"></div><div class="m" id="m3"></div><div class="m" id="m4"></div>
   <div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div>
   <div id="fakekb" hidden></div>
+  <div id="faketext" hidden></div>
   <textarea id="ta" aria-label="Texto del actor" rows="3"></textarea>
   <div id="hint">Tocá para abrir el teclado</div>
   <div id="hold" aria-hidden="true"></div>
@@ -238,8 +241,9 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     if(typeof s.op==='number'){ $('#op').value=Math.min(75,s.op); $('#vop').textContent=$('#op').value+'%'; }
     if(typeof s.enye==='boolean') $('#enye').checked=s.enye;
     if(typeof s.hitk==='boolean') $('#hitk').checked=s.hitk;
+    if(typeof s.showt==='boolean') $('#showt').checked=s.showt;
     for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
-      if(['op','enye','hitk'].includes(k)) continue;
+      if(['op','enye','hitk','showt'].includes(k)) continue;
       const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
   sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
   syncCustom();
@@ -253,7 +257,18 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   plate.addEventListener('touchstart',e=>{ if(!plate.hidden && !kbMode && !scrollMode) e.preventDefault(); },{passive:false});
   plate.addEventListener('contextmenu',e=>e.preventDefault());
   plate.addEventListener('selectstart',e=>e.preventDefault());
-  fakekb.addEventListener('pointerdown',e=>{ const key=e.target.closest('.k'); if(!key) return; key.classList.add('hit'); setTimeout(()=>key.classList.remove('hit'),130); });
+  const faketext=$('#faketext'); let shift=false;
+  fakekb.addEventListener('pointerdown',e=>{ const key=e.target.closest('.k'); if(!key) return;
+    if($('#hitk').checked){ key.classList.add('hit'); setTimeout(()=>key.classList.remove('hit'),130); }
+    if(!$('#showt').checked) return;
+    const l=key.dataset.l; let t=faketext.textContent;
+    if(l==='⌫') t=t.slice(0,-1);
+    else if(l==='⇧'){ shift=!shift; return; }
+    else if(l==='↵') t+='\n';
+    else if(l==='?123') return;
+    else if(l==='') t+=' ';
+    else { t+=shift?l.toUpperCase():l; shift=false; }
+    faketext.textContent=t; });
 
   function layout(){
     const vv=window.visualViewport;
@@ -285,7 +300,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
     let bg,mk,lt;
     if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
@@ -302,7 +317,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     ta.spellcheck=!off;
     ta.value=''; fakeMode=val('touch')==='kb'&&val('kbtype')==='fake'; kbMode=val('touch')==='kb'&&!fakeMode; scrollMode=val('touch')==='scroll'; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
     fakekb.hidden=!fakeMode;
-    if(fakeMode){ buildKb($('#enye').checked); fakekb.style.opacity=(+op.value/100); fakekb.classList.toggle('hits',$('#hitk').checked); }
+    if(fakeMode){ buildKb($('#enye').checked); fakekb.style.opacity=(+op.value/100); fakekb.classList.toggle('hits',$('#hitk').checked||$('#showt').checked); }
+    faketext.textContent=''; shift=false; faketext.hidden=!(fakeMode&&$('#showt').checked);
     setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
     document.body.style.background=bg;
     layout(); window.scrollTo(0,0);
@@ -313,7 +329,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   }
 
   function stop(){
-    ta.blur(); ta.value='';
+    ta.blur(); ta.value=''; faketext.textContent='';
     plate.hidden=true; setup.hidden=false; document.body.classList.remove('live');
     document.body.style.background='';
     try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
