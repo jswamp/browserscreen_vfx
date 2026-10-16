@@ -88,7 +88,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 .custom input[type=range]{width:100%;margin:0;height:28px}
 #sr{accent-color:#e5484d} #sg{accent-color:#3fb950} #sb{accent-color:#4c8dff}
 .chk{display:flex;align-items:center;gap:10px;padding:10px;border:2px solid var(--line);background:var(--panel);cursor:pointer}
-.chk input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.chk input{width:20px;height:20px;flex:none;margin:0;accent-color:var(--accent)}
 .chk b{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
 .chk small{color:var(--muted);font-size:11px;margin-left:auto;text-align:right}
 #op{accent-color:var(--accent)}
@@ -173,20 +173,10 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     <label class="chk" for="hitk"><input type="checkbox" id="hitk"><b>Iluminar tecla</b><small>Destello al tocar · se ve en cámara</small></label>
   </fieldset>
 
-  <fieldset id="textset">
-    <legend>Texto que se escribe</legend>
-    <div class="row">
-      <label class="opt"><input type="radio" name="text" id="t-off" value="off" checked><span><b>Oculto</b><small>Pantalla limpia</small></span></label>
-      <label class="opt"><input type="radio" name="text" id="t-on" value="on"><span><b>Tenue</b><small>El actor ve lo que escribe</small></span></label>
-    </div>
-  </fieldset>
-
-  <fieldset id="suggset">
-    <legend>Barra de sugerencias</legend>
-    <div class="row">
-      <label class="opt"><input type="radio" name="sugg" id="s-off" value="off" checked><span><b>Apagada</b><small>Si el teclado lo permite</small></span></label>
-      <label class="opt"><input type="radio" name="sugg" id="s-on" value="on"><span><b>Normal</b><small>Como en el uso diario</small></span></label>
-    </div>
+  <fieldset id="realset">
+    <legend>Teclado real</legend>
+    <label class="chk" for="showr"><input type="checkbox" id="showr"><b>Mostrar texto</b><small>Lo que se tipea aparece tenue</small></label>
+    <label class="chk" for="sugr"><input type="checkbox" id="sugr"><b>Sugerencias</b><small>Autocompletar, si el teclado lo permite</small></label>
   </fieldset>
 
   <button id="go" type="button">Empezar</button>
@@ -243,6 +233,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     if(typeof s.hitk==='boolean') $('#hitk').checked=s.hitk;
     if(typeof s.showt==='boolean') $('#showt').checked=s.showt;
     for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
+      if(k==='text'){ $('#showr').checked=v==='on'; continue; }
+      if(k==='sugg'){ $('#sugr').checked=v==='on'; continue; }
       if(['op','enye','hitk','showt'].includes(k)) continue;
       const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
   sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
@@ -300,7 +292,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:$('#showr').checked?'on':'off',sugg:$('#sugr').checked?'on':'off',touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
     let bg,mk,lt;
     if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
@@ -309,8 +301,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     plate.style.setProperty('--mark',mk);
     plate.style.setProperty('--light',lt);
     showMarks=val('marks')==='4';
-    plate.classList.toggle('showtext',val('text')==='on');
-    const off=val('sugg')==='off';
+    plate.classList.toggle('showtext',$('#showr').checked);
+    const off=!$('#sugr').checked;
     ta.setAttribute('autocomplete',off?'off':'on');
     ta.setAttribute('autocorrect',off?'off':'on');
     ta.setAttribute('autocapitalize',off?'none':'sentences');
@@ -344,8 +336,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     const fake=val('kbtype')==='fake';
     $('#typeset').hidden=t!=='kb';
     $('#fakeset').hidden=!(t==='kb'&&fake);
-    $('#textset').hidden=!(t==='kb'&&!fake);
-    $('#suggset').hidden=!(t==='kb'&&!fake);
+    $('#realset').hidden=!(t==='kb'&&!fake);
     $('#customPanel').hidden=val('color')!=='custom';
   }
   document.querySelectorAll('input[name="touch"],input[name="color"],input[name="kbtype"]').forEach(r=>r.addEventListener('change',syncPanels));
