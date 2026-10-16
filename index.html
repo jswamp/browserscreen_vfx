@@ -21,7 +21,7 @@
   --verde:#00b140; --verde-m:#006926;
   --azul:#0047bb; --azul-m:#002673;
   --gris:#767676; --gris-m:#3c3c3c;
-  --verde-l:#66d08c; --azul-l:#6691d6; --gris-l:#adadad;
+  --verde-l:#57cc81; --azul-l:#5786d2; --gris-l:#a5a5a5;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
@@ -70,7 +70,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   color:transparent;caret-color:transparent;font:16px/1.4 var(--mono);padding:0;margin:0;-webkit-text-fill-color:transparent}
 #plate.showtext #ta{color:var(--mark);-webkit-text-fill-color:var(--mark);opacity:.55}
 #hold{position:absolute;left:0;top:0;width:22%;height:12%;}
-#plate .c{position:absolute;width:calc(var(--ms)*1.45);height:calc(var(--ms)*1.45);transform:translate(-50%,-50%);border:var(--mt) solid var(--mark);background:var(--light);border-radius:50%;box-sizing:border-box;pointer-events:none}
+#plate .c{position:absolute;width:var(--ms);height:var(--ms);transform:translate(-50%,-50%);border:var(--mt) solid var(--mark);background:var(--light);border-radius:50%;box-sizing:border-box;pointer-events:none}
 #plate .c::after{content:"";position:absolute;left:50%;top:50%;width:calc(var(--mt)*1.8);height:calc(var(--mt)*1.8);background:var(--mark);border-radius:50%;transform:translate(-50%,-50%)}
 #hint{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font:500 15px var(--mono);color:var(--mark);text-align:center;pointer-events:none;transition:opacity .4s}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
@@ -196,8 +196,9 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     const pos=[[mx,myTop],[w-mx,myTop],[mx,myBot],[w-mx,myBot]];
     marks.forEach((m,i)=>{m.hidden=!showMarks||scrollMode; m.style.left=pos[i][0]+'px'; m.style.top=pos[i][1]+'px';});
     // Círculos fijos (modo Scroll): más adentro que las cruces de los costados, para que no se pisen
-    const cx=Math.round(w*0.25);
-    const cpos=[[cx,myTop],[w-cx,myTop],[cx,myBot],[w-cx,myBot]];
+    // Lo más cerca posible de las esquinas sin cruzarse con las cruces que se mueven por los costados (x = 100/1080 del ancho)
+    const kk=w/1080, cx=Math.round(135*kk+ms*0.85), cyT=Math.round(ms*0.9), cyB=Math.round(h-ms*0.9);
+    const cpos=[[cx,cyT],[w-cx,cyT],[cx,cyB],[w-cx,cyB]];
     circles.forEach((c,i)=>{c.hidden=!(scrollMode&&fixedOn); c.style.left=cpos[i][0]+'px'; c.style.top=cpos[i][1]+'px';});
     if(scrollMode){
       // Misma geometría que los JPG de scroll (1080 px de ancho): cruz de 70 px, trazo 10 px, x=100 px, una cada 1280 px por columna, intercaladas
