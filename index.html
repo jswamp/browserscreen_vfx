@@ -87,6 +87,20 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 .custom .sl span{text-align:right;color:var(--muted)}
 .custom input[type=range]{width:100%;margin:0;height:28px}
 #sr{accent-color:#e5484d} #sg{accent-color:#3fb950} #sb{accent-color:#4c8dff}
+.chk{display:flex;align-items:center;gap:10px;padding:10px;border:2px solid var(--line);background:var(--panel);cursor:pointer}
+.chk input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.chk b{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
+.chk small{color:var(--muted);font-size:11px;margin-left:auto;text-align:right}
+#op{accent-color:var(--accent)}
+/* Teclado falso */
+#fakekb{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:rgba(232,234,237,.55);pointer-events:none;font-family:Roboto,"Segoe UI",Arial,sans-serif}
+#fakekb.hits{pointer-events:auto}
+#fakekb .bar{flex:0 0 15%}
+#fakekb .rows{flex:1;display:flex;flex-direction:column;padding:0 .6% 1.5%}
+#fakekb .r{flex:1;display:flex;justify-content:center;gap:1.1%;padding:.7% 0}
+#fakekb .k{flex:0 0 8.8%;display:flex;align-items:center;justify-content:center;background:#fff;color:#202124;border-radius:6px;font-size:clamp(14px,4.6vw,26px);text-transform:lowercase;transition:background .08s}
+#fakekb .k.w15{flex-basis:13.6%} #fakekb .k.sp{flex:1 1 auto} #fakekb .k.fn{background:#c9cdd3;font-size:clamp(12px,3.4vw,20px)}
+#fakekb .k.hit{background:#7a7f86}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -139,6 +153,23 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     </div>
   </fieldset>
 
+  <fieldset id="typeset">
+    <legend>Tipo de teclado · solo en Abrir teclado</legend>
+    <div class="row">
+      <label class="opt"><input type="radio" name="kbtype" id="kt-real" value="real" checked><span><b>Real</b><small>El teclado del celular</small></span></label>
+      <label class="opt"><input type="radio" name="kbtype" id="kt-fake" value="fake"><span><b>Falso</b><small>Dibujado, la pantalla no responde</small></span></label>
+    </div>
+  </fieldset>
+
+  <fieldset id="fakeset">
+    <legend>Teclado falso</legend>
+    <div class="custom">
+      <label class="sl" for="op" style="grid-template-columns:auto 1fr 44px"><b style="font-size:14px;letter-spacing:.08em">OPACIDAD</b><input type="range" id="op" min="0" max="75" value="20"><span id="vop">20%</span></label>
+    </div>
+    <label class="chk" for="enye"><input type="checkbox" id="enye" checked><b>Con ñ</b><small>Teclado en español</small></label>
+    <label class="chk" for="hitk"><input type="checkbox" id="hitk"><b>Iluminar tecla</b><small>Destello al tocar · se ve en cámara</small></label>
+  </fieldset>
+
   <fieldset id="textset">
     <legend>Texto que se escribe · solo en Abrir teclado</legend>
     <div class="row">
@@ -160,7 +191,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   <section class="notes">
     <h2>En set</h2>
     <ol>
-      <li>Con <strong>No hacer nada</strong>, la pantalla queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la pantalla para abrirlo: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces de los costados se mueven con el dedo, sin fin; los 4 círculos quedan fijos para el corner pin.</li>
+      <li>Con <strong>No hacer nada</strong>, la pantalla queda fija aunque la toquen. Con <strong>Abrir teclado</strong>, tocá la pantalla para abrirlo, o elegí un teclado <strong>falso</strong> dibujado: las marcas de abajo se ubican solas justo arriba del teclado. Con <strong>Scroll</strong>, el actor scrollea y las cruces de los costados se mueven con el dedo, sin fin; los 4 círculos quedan fijos para el corner pin.</li>
       <li><strong>Para volver a este menú</strong>, mantené apretada la esquina superior izquierda 2 segundos. Al volver se borra lo escrito.</li>
       <li>Modo avión, <strong>brillo manual y bajo</strong>, teclado en modo oscuro y bloqueo automático de pantalla desactivado.</li>
       <li>El actor escribe <strong>el texto real del guion</strong>, así los dedos caen en las letras correctas.</li>
@@ -179,6 +210,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   <div id="scroller" hidden><div id="track"></div></div>
   <div class="m" id="m1"></div><div class="m" id="m2"></div><div class="m" id="m3"></div><div class="m" id="m4"></div>
   <div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div>
+  <div id="fakekb" hidden></div>
   <textarea id="ta" aria-label="Texto del actor" rows="3"></textarea>
   <div id="hint">Tocá para abrir el teclado</div>
   <div id="hold" aria-hidden="true"></div>
@@ -192,7 +224,8 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   const circles=[$('#c1'),$('#c2'),$('#c3'),$('#c4')];
   let fixedOn=true;
   const COLORS={verde:['--verde','--verde-m','--verde-l'],azul:['--azul','--azul-m','--azul-l'],gris:['--gris','--gris-m','--gris-l']};
-  let showMarks=true, wake=null, kbMode=false, scrollMode=false;
+  let showMarks=true, wake=null, kbMode=false, scrollMode=false, fakeMode=false;
+  const fakekb=$('#fakekb');
   const scroller=$('#scroller'), track=$('#track');
   const val=n=>document.querySelector(`input[name="${n}"]:checked`).value;
 
@@ -201,10 +234,21 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   function syncCustom(){ const [r,g,b]=rgb(); sv.forEach((v,i)=>v.textContent=sl[i].value);
     $('#customDot').style.background=`rgb(${r},${g},${b})`; $('#customLabel').textContent=`RGB ${r}·${g}·${b}`; }
   try{const s=JSON.parse(localStorage.getItem('placa')||'{}');
+    if(typeof s.op==='number'){ $('#op').value=Math.min(75,s.op); $('#vop').textContent=$('#op').value+'%'; }
+    if(typeof s.enye==='boolean') $('#enye').checked=s.enye;
+    if(typeof s.hitk==='boolean') $('#hitk').checked=s.hitk;
     for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
+      if(['op','enye','hitk'].includes(k)) continue;
       const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
   sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
   syncCustom();
+  const op=$('#op'); op.addEventListener('input',()=>{$('#vop').textContent=op.value+'%';});
+  function buildKb(enye){
+    const rows=[[...'qwertyuiop'], enye?[...'asdfghjklñ']:[...'asdfghjkl'], ['⇧',...'zxcvbnm','⌫'], ['?123',',','','.','↵']];
+    const k=(t)=>{ const fn=['⇧','⌫','?123','↵'].includes(t); const cls=['k']; if(fn) cls.push('fn','w15'); if(t==='') cls.push('sp'); return `<div class="${cls.join(' ')}">${t}</div>`; };
+    fakekb.innerHTML='<div class="bar"></div><div class="rows">'+rows.map(r=>'<div class="r">'+r.map(k).join('')+'</div>').join('')+'</div>';
+  }
+  fakekb.addEventListener('pointerdown',e=>{ const key=e.target.closest('.k'); if(!key) return; key.classList.add('hit'); setTimeout(()=>key.classList.remove('hit'),130); });
 
   function layout(){
     const vv=window.visualViewport;
@@ -213,7 +257,9 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     plate.style.width=w+'px'; plate.style.height=h+'px';
     const ms=Math.round(Math.min(w,h)*0.065), mt=Math.max(3,Math.round(ms*0.14));
     plate.style.setProperty('--ms',ms+'px'); plate.style.setProperty('--mt',mt+'px');
-    const mx=Math.round(w*0.09), myTop=Math.round(Math.max(h*0.06,ms)), myBot=Math.round(h-ms*1.1);
+    const kbH=fakeMode?Math.round(Math.min(h*0.38,w*0.78)):0;
+    fakekb.style.height=kbH+'px';
+    const mx=Math.round(w*0.09), myTop=Math.round(Math.max(h*0.06,ms)), myBot=Math.round(h-kbH-ms*1.1);
     const pos=[[mx,myTop],[w-mx,myTop],[mx,myBot],[w-mx,myBot]];
     marks.forEach((m,i)=>{m.hidden=!showMarks||scrollMode; m.style.left=pos[i][0]+'px'; m.style.top=pos[i][1]+'px';});
     // Círculos fijos (modo Scroll): más adentro que las cruces de los costados, para que no se pisen
@@ -234,7 +280,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed'),custom:rgb()}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:val('text'),sugg:val('sugg'),touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
     let bg,mk,lt;
     if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
@@ -249,7 +295,9 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     ta.setAttribute('autocorrect',off?'off':'on');
     ta.setAttribute('autocapitalize',off?'none':'sentences');
     ta.spellcheck=!off;
-    ta.value=''; kbMode=val('touch')==='kb'; scrollMode=val('touch')==='scroll'; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
+    ta.value=''; fakeMode=val('touch')==='kb'&&val('kbtype')==='fake'; kbMode=val('touch')==='kb'&&!fakeMode; scrollMode=val('touch')==='scroll'; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
+    fakekb.hidden=!fakeMode;
+    if(fakeMode){ buildKb($('#enye').checked); fakekb.style.opacity=(+op.value/100); fakekb.classList.toggle('hits',$('#hitk').checked); }
     setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
     document.body.style.background=bg;
     layout(); window.scrollTo(0,0);
@@ -272,11 +320,14 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   function syncPanels(){
     const t=val('touch');
     $('#fixedset').hidden=t!=='scroll';
-    $('#textset').hidden=t!=='kb';
-    $('#suggset').hidden=t!=='kb';
+    const fake=val('kbtype')==='fake';
+    $('#typeset').hidden=t!=='kb';
+    $('#fakeset').hidden=!(t==='kb'&&fake);
+    $('#textset').hidden=!(t==='kb'&&!fake);
+    $('#suggset').hidden=!(t==='kb'&&!fake);
     $('#customPanel').hidden=val('color')!=='custom';
   }
-  document.querySelectorAll('input[name="touch"],input[name="color"]').forEach(r=>r.addEventListener('change',syncPanels));
+  document.querySelectorAll('input[name="touch"],input[name="color"],input[name="kbtype"]').forEach(r=>r.addEventListener('change',syncPanels));
   syncPanels();
 
   plate.addEventListener('click',e=>{ if(kbMode && e.target!==hold){ ta.focus({preventScroll:true}); hint.style.opacity='0'; }});
