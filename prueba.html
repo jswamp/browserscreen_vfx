@@ -70,7 +70,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
   color:transparent;caret-color:transparent;font:16px/1.4 var(--mono);padding:0;margin:0;-webkit-text-fill-color:transparent}
 #plate.showtext #ta{color:var(--mark);-webkit-text-fill-color:var(--mark);opacity:.55}
 #hold{position:absolute;left:0;top:0;width:22%;height:12%;}
-#plate .c{position:absolute;width:var(--cs);height:var(--cs);transform:translate(-50%,-50%);pointer-events:none;opacity:.75}
+#plate .c{position:absolute;width:var(--cs);height:var(--cs);transform:translate(-50%,-50%);pointer-events:none}
 #plate .c svg{display:block;width:100%;height:100%}
 #hint{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font:500 15px var(--mono);color:var(--mark);text-align:center;pointer-events:none;transition:opacity .4s}
 @media (prefers-reduced-motion:reduce){#hint{transition:none}}
@@ -97,7 +97,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 .chk input{width:20px;height:20px;flex:none;margin:0;accent-color:var(--accent)}
 .chk b{white-space:nowrap;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
 .chk small{color:var(--muted);font-size:11px;margin-left:auto;text-align:right}
-#op{accent-color:var(--accent)}
+#op,#cop{accent-color:var(--accent)}
 /* Teclado falso */
 #fakekb{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:rgba(232,234,237,.55);pointer-events:none;font-family:Roboto,"Segoe UI",Arial,sans-serif}
 #fakekb.hits{pointer-events:auto}
@@ -169,6 +169,9 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     <div class="row">
       <label class="opt"><input type="radio" name="fixed" id="f-on" value="on" checked><span><b>Círculos</b><small>4 fijos, para el corner pin</small></span></label>
       <label class="opt"><input type="radio" name="fixed" id="f-off" value="off"><span><b>Sin fijas</b><small>Solo las cruces que se mueven</small></span></label>
+    </div>
+    <div class="custom" id="copbox">
+      <label class="sl" for="cop" style="grid-template-columns:auto 1fr 44px"><b style="font-size:14px;letter-spacing:.08em">OPACIDAD</b><input type="range" id="cop" min="0" max="100" value="15"><span id="vcop">15%</span></label>
     </div>
   </fieldset>
 
@@ -264,14 +267,16 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     if(typeof s.showt==='boolean') $('#showt').checked=s.showt;
     if(typeof s.snap==='boolean') $('#snap').checked=s.snap;
     if(typeof s.lock==='boolean') $('#lock').checked=s.lock;
+    if(typeof s.cop==='number'){ $('#cop').value=s.cop; $('#vcop').textContent=s.cop+'%'; }
     for(const [k,v] of Object.entries(s)){ if(k==='custom'&&Array.isArray(v)){ v.forEach((n,i)=>{ if(sl[i]) sl[i].value=n; }); continue; }
       if(k==='text'){ $('#showr').checked=v==='on'; continue; }
       if(k==='sugg'){ $('#sugr').checked=v==='on'; continue; }
-      if(['op','enye','hitk','showt','snap','lock'].includes(k)) continue;
+      if(['op','enye','hitk','showt','snap','lock','cop'].includes(k)) continue;
       const el=document.querySelector(`input[name="${k}"][value="${v}"]`); if(el) el.checked=true;}}catch(e){}
   sl.forEach(x=>x.addEventListener('input',()=>{ syncCustom(); $('#c-custom').checked=true; syncPanels(); }));
   syncCustom();
   const op=$('#op'); op.addEventListener('input',()=>{$('#vop').textContent=op.value+'%';});
+  $('#cop').addEventListener('input',e=>{$('#vcop').textContent=e.target.value+'%';});
   function buildKb(enye){
     const rows=[[...'qwertyuiop'], enye?[...'asdfghjklñ']:[...'asdfghjkl'], ['⇧',...'zxcvbnm','⌫'], ['?123',',','','.','↵']];
     const k=(t)=>{ const fn=['⇧','⌫','?123','↵'].includes(t); const cls=['k']; if(fn) cls.push('fn','w15'); if(t==='') cls.push('sp'); return `<div class="${cls.join(' ')}" data-l="${t}"></div>`; };
@@ -379,7 +384,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
 
   async function start(){
     const c=val('color');
-    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:$('#showr').checked?'on':'off',sugg:$('#sugr').checked?'on':'off',touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked,dir:val('dir'),snap:$('#snap').checked,lock:$('#lock').checked}));}catch(e){}
+    try{localStorage.setItem('placa',JSON.stringify({color:c,marks:val('marks'),text:$('#showr').checked?'on':'off',sugg:$('#sugr').checked?'on':'off',touch:val('touch'),fixed:val('fixed'),custom:rgb(),kbtype:val('kbtype'),op:+op.value,enye:$('#enye').checked,hitk:$('#hitk').checked,showt:$('#showt').checked,dir:val('dir'),snap:$('#snap').checked,lock:$('#lock').checked,cop:+$('#cop').value}));}catch(e){}
     const root=getComputedStyle(document.documentElement);
     let bg,mk,lt;
     if(c==='custom'){ const [r,g,b]=rgb(); bg=`rgb(${r},${g},${b})`; mk=`rgb(${r*.55|0},${g*.55|0},${b*.55|0})`; lt=`rgb(${Math.round(r+(255-r)*.34)},${Math.round(g+(255-g)*.34)},${Math.round(b+(255-b)*.34)})`; }
@@ -398,6 +403,7 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     scroller.classList.toggle('h',hMode); scroller.classList.toggle('snap',hMode&&$('#snap').checked);
     track.innerHTML=hMode?'<i></i>'.repeat(PAGES):''; track.style.cssText=''; fixedOn=val('fixed')==='on'; scroller.hidden=!scrollMode||fMode; ta.disabled=!kbMode; ta.hidden=!kbMode; hint.hidden=!kbMode; hint.style.opacity='1';
     fakekb.hidden=!fakeMode;
+    circles.forEach(c=>c.style.opacity=(+$('#cop').value/100));
     if(fakeMode){ buildKb($('#enye').checked); fakekb.style.opacity=(+op.value/100); fakekb.classList.toggle('hits',$('#hitk').checked||$('#showt').checked); }
     faketext.textContent=''; shift=false; faketext.hidden=!(fakeMode&&$('#showt').checked);
     setup.hidden=true; plate.hidden=false; document.body.classList.add('live');
@@ -425,13 +431,14 @@ legend{font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:
     $('#dirset').hidden=t!=='scroll';
     $('#snaprow').hidden=val('dir')!=='h';
     $('#lockrow').hidden=val('dir')!=='f';
+    $('#copbox').hidden=val('fixed')!=='on';
     const fake=val('kbtype')==='fake';
     $('#typeset').hidden=t!=='kb';
     $('#fakeset').hidden=!(t==='kb'&&fake);
     $('#realset').hidden=!(t==='kb'&&!fake);
     $('#customPanel').hidden=val('color')!=='custom';
   }
-  document.querySelectorAll('input[name="touch"],input[name="color"],input[name="kbtype"],input[name="dir"]').forEach(r=>r.addEventListener('change',syncPanels));
+  document.querySelectorAll('input[name="touch"],input[name="color"],input[name="kbtype"],input[name="dir"],input[name="fixed"]').forEach(r=>r.addEventListener('change',syncPanels));
   syncPanels();
 
   plate.addEventListener('click',e=>{ if(kbMode && e.target!==hold){ ta.focus({preventScroll:true}); hint.style.opacity='0'; }});
